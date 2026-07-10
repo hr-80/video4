@@ -18,6 +18,59 @@ html,body{
   background:#000;
 }
 
+.wrapper{
+  width:100%;
+  max-width:1100px;
+  padding:10px;
+  margin:auto;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:12px;
+  justify-items:center;
+}
+
+.card{
+  background:rgba(255,255,255,.92);
+  border-radius:10px;
+  padding:4px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  cursor:pointer;
+  width:100%;
+  max-width:180px;
+  border:1px solid rgba(0,0,0,0.2);
+  transition:transform 0.2s;
+}
+
+.card:hover {
+  transform:scale(1.02);
+  box-shadow:0 4px 8px rgba(255,255,255,0.2);
+}
+
+.card img{
+  width:100%;
+  aspect-ratio:16/9;
+  object-fit:cover;
+  border-radius:8px;
+}
+
+.card-title{
+  margin-top:4px;
+  font-size:13px;
+  color:#000;
+  text-align:center;
+  font-weight:700;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  line-height:1.2;
+  padding:2px 0;
+}
+
 #playerPage{
   position:fixed;
   top:0;
@@ -27,22 +80,12 @@ html,body{
   width:100%;
   height:100vh;
   background:#000;
-  display:block;
+  display:none;
   z-index:9999;
-  overflow-y:scroll;
-  overflow-x:hidden;
-  scroll-snap-type:y mandatory;
+  overflow:hidden;
 }
 
-.video-container{
-  width:100%;
-  height:100vh;
-  scroll-snap-align:start;
-  position:relative;
-  background:#000;
-}
-
-.video-container iframe{
+#youtubeFrame{
   width:100%;
   height:100%;
   border:none;
@@ -50,7 +93,7 @@ html,body{
   z-index:1;
 }
 
-.video-container .poster{
+#ytPoster{
   position:absolute;
   top:0;
   left:0;
@@ -65,180 +108,133 @@ html,body{
 
 <body>
 
-<div id="playerPage"></div>
+<div class="wrapper" id="home">
+  <div class="grid" id="channelsGrid"></div>
+</div>
+
+<div id="playerPage">
+  <img id="ytPoster">
+  <iframe id="youtubeFrame" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+</div>
 
 <script>
 const channelsData = `
+1
 https://www.youtube.com/shorts/4ZyRh-Q3oIo
+2
 https://www.youtube.com/shorts/AOiRrVdFRv0
+3
 https://www.youtube.com/shorts/PSuskcWil9Y
+4
 https://www.youtube.com/shorts/6_8teXDT_c4
+5
 https://www.youtube.com/shorts/Uag9IvgAP38
+6
 https://www.youtube.com/shorts/VRuFRi5DBV0
+7
 https://www.youtube.com/shorts/upgUH3ymHzs
+8
 https://www.youtube.com/shorts/o39L3F7lP2o
+9
 https://www.youtube.com/shorts/tvvIrhFxcY0
+10
 https://www.youtube.com/shorts/-aV03fHmFcM
+11
 https://www.youtube.com/shorts/zk9DdBtEJ8g
+12
 https://www.youtube.com/shorts/ZH36mjW7qKs
+13
 https://www.youtube.com/shorts/R2WaJB0zoSM
+14
 https://www.youtube.com/shorts/gbiv6Piyi6A
+15
 https://www.youtube.com/shorts/VvB-jO0W_ec
+16
 https://www.youtube.com/shorts/A0cjC5SY6do
+17
 https://www.youtube.com/shorts/iqyf2Q5McNM
+18
 https://www.youtube.com/shorts/fCRG6wKOoSI
+19
 https://www.youtube.com/shorts/iRn3BMAfLGg
+20
 https://www.youtube.com/shorts/XBSLxcN5B8E
+21
 https://www.youtube.com/shorts/zaWeZPoJtjY
-
 
 `;
 
-function getYouTubeId(url) {
-  let regex = /youtube\.com\/shorts\/([^?&\/]+)/;
-  let match = url.match(regex);
-  if (match) return match[1];
+const grid = document.getElementById("channelsGrid");
 
+// دالة لاستخراج ID من أي رابط يوتيوب (عادي أو شورتس)
+function getYouTubeId(url){
+  // للشورتس: youtube.com/shorts/ID
+  let regex = /youtube\.com\/shorts\/([^?&/]+)/;
+  let match = url.match(regex);
+  if(match) return match[1];
+  
+  // للروابط العادية
   regex = /(?:youtube\.com\/(?:.*v=|live\/)|youtu\.be\/)([^&?/]+)/;
   match = url.match(regex);
   return match ? match[1] : null;
 }
 
-const videoUrls = channelsData
-  .trim()
-  .split(/\s+/)
-  .filter((url) => url.startsWith('http'));
+const lines = channelsData.trim().split('\n').filter(l => l.trim() !== "");
+for (let i = 0; i < lines.length; i += 2) {
+    const title = lines[i].trim();
+    const stream = lines[i+1]?.trim();
+    if (title && stream) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.dataset.stream = stream;
+        card.dataset.title = title;
+        
+        const ytId = getYouTubeId(stream);
+        const img = ytId ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` : '';
+        card.innerHTML = `<img src="${img}"><div class="card-title">${title}</div>`;
+        grid.appendChild(card);
+    }
+}
 
-const playerPage = document.getElementById('playerPage');
-const videoIds = videoUrls.map(getYouTubeId).filter(Boolean);
-let currentPlayingIndex = -1;
+const cards = document.querySelectorAll('.card');
+const playerPage = document.getElementById("playerPage");
+const youtubeFrame = document.getElementById("youtubeFrame");
+const ytPoster = document.getElementById("ytPoster");
+const home = document.getElementById("home");
 
-function createVideoContainer(ytId, index) {
-  const container = document.createElement('div');
-  container.className = 'video-container';
-  container.dataset.index = index;
+window.addEventListener('load', function() {
+  const savedScroll = localStorage.getItem('scrollPosition');
+  if (savedScroll) {
+    setTimeout(() => {
+      window.scrollTo({ top: parseInt(savedScroll), behavior: 'auto' });
+      localStorage.removeItem('scrollPosition');
+    }, 100);
+  }
+});
 
-  const poster = document.createElement('img');
-  poster.className = 'poster';
-  poster.src = `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`;
-  poster.alt = 'صورة مصغرة للفيديو';
-  poster.style.display = 'block';
-
-  const iframe = document.createElement('iframe');
-  iframe.dataset.index = index;
-  iframe.src = `https://www.youtube.com/embed/${ytId}?autoplay=0&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1&mute=0`;
-  iframe.allow = 'autoplay; encrypted-media; picture-in-picture';
-  iframe.allowFullscreen = true;
-  iframe.onload = () => {
-    poster.style.display = 'none';
+cards.forEach(card=>{
+  card.onclick = ()=>{
+    const ytId = getYouTubeId(card.dataset.stream);
+    if(!ytId) return;
+    localStorage.setItem('scrollPosition', window.scrollY);
+    ytPoster.src = `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`;
+    ytPoster.style.display = 'block';
+    home.style.display = 'none';
+    playerPage.style.display = 'block';
+    youtubeFrame.src = `https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`;
+    youtubeFrame.onload = ()=>{ ytPoster.style.display = 'none'; };
+    history.pushState({playing:true}, "");
   };
-
-  container.appendChild(poster);
-  container.appendChild(iframe);
-  return container;
-}
-
-function setIframeSrc(iframe, ytId, autoplay = false, mute = true) {
-  const autoplayValue = autoplay ? 1 : 0;
-  const muteValue = mute ? 1 : 0;
-  iframe.src = `https://www.youtube.com/embed/${ytId}?autoplay=${autoplayValue}&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1&mute=${muteValue}`;
-}
-
-function playVideo(index) {
-  if (currentPlayingIndex === index) return;
-  if (index < 0 || index >= videoIds.length) return;
-
-  if (currentPlayingIndex >= 0 && currentPlayingIndex < videoIds.length) {
-    const prevContainer = playerPage.querySelector(`.video-container[data-index="${currentPlayingIndex}"]`);
-    if (prevContainer) {
-      const prevIframe = prevContainer.querySelector('iframe');
-      if (prevIframe) {
-        setIframeSrc(prevIframe, videoIds[currentPlayingIndex], false, true);
-      }
-    }
-  }
-
-  const container = playerPage.querySelector(`.video-container[data-index="${index}"]`);
-  if (container) {
-    const iframe = container.querySelector('iframe');
-    if (iframe) {
-      setIframeSrc(iframe, videoIds[index], true, false);
-      currentPlayingIndex = index;
-    }
-  }
-}
-
-function pauseCurrentVideo() {
-  if (currentPlayingIndex < 0 || currentPlayingIndex >= videoIds.length) return;
-  const container = playerPage.querySelector(`.video-container[data-index="${currentPlayingIndex}"]`);
-  if (!container) return;
-  const iframe = container.querySelector('iframe');
-  if (iframe) {
-    setIframeSrc(iframe, videoIds[currentPlayingIndex], false, true);
-
-    function muteAllVideos() {
-      const allContainers = playerPage.querySelectorAll('.video-container');
-      allContainers.forEach((container, index) => {
-        const iframe = container.querySelector('iframe');
-        if (iframe) {
-          setIframeSrc(iframe, videoIds[index], false, true);
-        }
-      });
-    }
-  }
-}
-
-const observer = new IntersectionObserver(
-  (entries) => {
-    let bestIndex = -1;
-    let bestRatio = 0;
-
-    entries.forEach((entry) => {
-      const index = Number(entry.target.dataset.index);
-      if (entry.intersectionRatio > bestRatio) {
-        bestRatio = entry.intersectionRatio;
-        bestIndex = index;
-      }
-    });
-
-    if (bestIndex >= 0 && bestIndex !== currentPlayingIndex && bestRatio >= 0.55) {
-      playVideo(bestIndex);
-    }
-  },
-  {
-    root: playerPage,
-    threshold: [0.25, 0.55, 0.75, 0.95],
-  }
-);
-
-videoIds.forEach((ytId, index) => {
-  const container = createVideoContainer(ytId, index);
-  playerPage.appendChild(container);
-  observer.observe(container);
 });
 
-window.addEventListener('load', () => {
-  // منع العودة إلى الصفحة السابقة
-  window.history.pushState(null, '', window.location.href);
-  
-  if (videoIds.length > 0) {
-    playVideo(0);
+window.onpopstate = ()=>{
+  if(playerPage.style.display === "block"){
+    playerPage.style.display = 'none';
+    home.style.display = 'block';
+    youtubeFrame.src = "";
+    ytPoster.style.display = 'none';
   }
-});
-
-window.addEventListener('popstate', () => {
-  // عند محاولة الرجوع بزر Back، أغلق النافذة أو أعد التوجيه
-    muteAllVideos();
-  window.history.pushState(null, '', window.location.href);
-  window.close();
-  // أو يمكن استخدام: window.location.href = 'about:blank';
-});
-
-window.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    muteAllVideos();
-  }
-});
+};
 </script>
 
 </body>
